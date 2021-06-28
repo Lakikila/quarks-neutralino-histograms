@@ -60,8 +60,9 @@ void quark_to_fjet_matching::Loop()
    FourVektor lv,fatjet;
    Double_t minimum,min_quark;
    int index_min,index_n;
-   bool neutralino_failed=false;
+   bool neutralino_failed=false,neutralino_quark_failed=false;
    int quark_failed_jet=0,process_unsuccessful=0;
+   int quark_neutralino_failed_jet=0,neutralino_process_unsuccessful=0;
 
    vector<FourVektor> vector_neutralino;
    fChain->SetBranchStatus("*",0);
@@ -114,17 +115,22 @@ void quark_to_fjet_matching::Loop()
             }
         } //nasli minimum za vektor_neutralino[index_n]
         //fatjet ima bas najmanji dR za neutralino index_n,a to je fatjet na mestu index_min
-	cout<< "Process: "<<jentry << "dRmin[" << index_n<<"]=" << minimum<< endl;
+	//cout<< "Process: "<<jentry << "dRmin[" << index_n<<"]=" << minimum<< endl;
 
         for(int i=0;i<3;i++){
 	
             
-	lv.SetXYZT(0,(*truth_QuarkFromNeutralino_eta)[i+3*index_n],(*truth_QuarkFromNeutralino_phi)[i+3*index_n],0);
-            if(fatjet.DeltaR(lv)  > 0.8 ){
+	  lv.SetXYZT(0,(*truth_QuarkFromNeutralino_eta)[i+3*index_n],(*truth_QuarkFromNeutralino_phi)[i+3*index_n],0);
+              if(fatjet.DeltaR(lv)  > 0.8 ){
 		          
-		quark_failed_jet++;
-                neutralino_failed=true;
-            }
+		  quark_failed_jet++;
+                  neutralino_failed=true;
+              }
+            if(lv.DeltaR( vector_neutralino[index_n]) >0.8){
+		quark_neutralino_failed_jet++;
+		neutralino_quark_failed=true;
+
+	    }
         }
         
         // proverili smo koliko je kvarkova izletelo iz jeta
@@ -137,23 +143,36 @@ void quark_to_fjet_matching::Loop()
                     minimum=vector_neutralino[index_n].DeltaR(lv);
                     fatjet.SetXYZT(0,(*fatjet_eta)[i],(*fatjet_phi)[i],0);
                 }
+		
             }
         }
-	cout<< "Process: "<<jentry << " dRmin[" << index_n<<"]=" << minimum<<endl;
+	//cout<< "Process: "<<jentry << " dRmin[" << index_n<<"]=" << minimum<<endl;
 	for(int i=0;i<3;i++){//truth_QuarkFromNeutralino_eta->size();i++){
             lv.SetXYZT(0,(*truth_QuarkFromNeutralino_eta)[i+3*index_n],(*truth_QuarkFromNeutralino_phi)[i+3*index_n],0);
             if(fatjet.DeltaR(lv)  > 0.8 ){
                 quark_failed_jet++;
                 neutralino_failed=true;
             }
+            if(lv.DeltaR( vector_neutralino[index_n]) >0.8){
+		quark_neutralino_failed_jet++;
+		neutralino_quark_failed=true;
+
+	    }
         }
         if(neutralino_failed==true){
             neutralino_failed=false;
             process_unsuccessful++;
         }
+        if(neutralino_quark_failed==true){
+	    neutralino_quark_failed=false;
+	    neutralino_process_unsuccessful++;
+	}
    }
    
     cout<<  "# of unmatched quarks: " << quark_failed_jet << endl;
     cout<< "# of unsuccessful processes: "<< process_unsuccessful<< " and its % is: " << process_unsuccessful*1.0/nentries*100<<"%" << endl;
+
+    cout<<  "# of unmatched quarks (with neutralino): " << quark_neutralino_failed_jet << endl;
+    cout<< "# of unsuccessful processes (with neutralino): "<< neutralino_process_unsuccessful<< " and its % is: " << neutralino_process_unsuccessful*1.0/nentries*100<<"%" << endl;
 
 }
